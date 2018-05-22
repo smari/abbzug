@@ -58,6 +58,12 @@ class Site:
         print("Building site %s..." % sitename)
         stime = datetime.now()
 
+        self.cache = {}
+        for section in self.config.sections():
+            if section[:1] == '/':
+                self._preload_section(section[1:], self.config[section])
+        print("[PRELOAD] Done")
+
         for section in self.config.sections():
             if section[:1] == '/':
                 location = section[1:]
@@ -86,7 +92,7 @@ class Site:
             posts = self._build_content(location, content, template, conf)
             if index:
                 # Build an index!
-                env = {'posts': posts}
+                env = {'posts': self.cache[location].values()}
                 self._build_nocontent(location, index, conf, env)
         else:
             if not content and self.debug:
@@ -115,21 +121,34 @@ class Site:
             })
             fh.write(self._render(template, env))
 
-        return None
 
+    def _preload_section(self, location, conf):
+        content = conf.get('content', None)
+        if not content:
+            return
+
+        indir = os.path.join(self.dir_content, content)
+        if self.debug:
+            print("  Searching for content in %s" % indir)
+
+        self.cache[location] = {}
+        for infile in glob.iglob(indir + '/**/*.md', recursive=True):
+            infn = infile.split("/")[-1]
+            post = frontmatter.load(infile)
+            self.cache[location][infn] = post
 
     def _build_content(self, location, content, template, conf, env={}):
         """Build a section that has associated Markdown posts."""
 
-        indir = os.path.join(self.dir_content, content)
+        #indir = os.path.join(self.dir_content, content)
         outdir = os.path.join(self.dir_output, location)
-        if self.debug:
-            print("  Searching for content in %s" % indir)
+        #if self.debug:
+        #    print("  Searching for content in %s" % indir)
         os.makedirs(outdir, exist_ok=True)
 
-        posts = []
+        #posts = []
 
-        for infile in glob.iglob(indir + '/**/*.md', recursive=True):
+        for infn, post in self.cache[location].items():
             jinja2env = Environment(
                 loader=FileSystemLoader(self.dir_templates),
                 extensions=['jinja2_markdown.MarkdownExtension', 'mdcontent.MDContentExtension']
@@ -140,8 +159,6 @@ class Site:
                 print("  ERROR: Could not find template '%s'. Skipping all content!" % (template))
                 return
 
-            infn = infile.split("/")[-1]
-            post = frontmatter.load(infile)
             outfn = infn.replace(".md", ".html")
             outfile = os.path.join(outdir, outfn)
             with open(outfile, "w+") as fh:
@@ -154,12 +171,8 @@ class Site:
                 html = self._render(template, env)
                 fh.write(html)
 
-            posts.append(post.metadata)
-
             if self.debug:
                 print("    %s -> %s" % (infn, outfile))
-
-        return posts
 
 
     def _render(self, template, env={}):
