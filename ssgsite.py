@@ -92,7 +92,7 @@ class Site:
             posts = self._build_content(location, content, template, conf)
             if index:
                 # Build an index!
-                env = {'posts': self.cache[location].values()}
+                env = {'posts': self.cache[location]}
                 self._build_nocontent(location, index, conf, env)
         else:
             if not content and self.debug:
@@ -128,27 +128,28 @@ class Site:
             return
 
         indir = os.path.join(self.dir_content, content)
+        outdir = os.path.join(self.dir_output, location)
+        os.makedirs(outdir, exist_ok=True)
+
         if self.debug:
             print("  Searching for content in %s" % indir)
 
-        self.cache[location] = {}
+        self.cache[location] = []
         for infile in glob.iglob(indir + '/**/*.md', recursive=True):
             infn = infile.split("/")[-1]
+            outfn = infn.replace(".md", ".html")
+            outfile = os.path.join(outdir, outfn)
             post = frontmatter.load(infile)
-            self.cache[location][infn] = post
+            post.metadata["inpath"] = infile
+            post.metadata["outpath"] = outfile
+            post.metadata["url"] = outfn
+            self.cache[location].append(post)
+
 
     def _build_content(self, location, content, template, conf, env={}):
         """Build a section that has associated Markdown posts."""
 
-        #indir = os.path.join(self.dir_content, content)
-        outdir = os.path.join(self.dir_output, location)
-        #if self.debug:
-        #    print("  Searching for content in %s" % indir)
-        os.makedirs(outdir, exist_ok=True)
-
-        #posts = []
-
-        for infn, post in self.cache[location].items():
+        for post in self.cache[location]:
             jinja2env = Environment(
                 loader=FileSystemLoader(self.dir_templates),
                 extensions=['jinja2_markdown.MarkdownExtension', 'mdcontent.MDContentExtension']
@@ -159,9 +160,7 @@ class Site:
                 print("  ERROR: Could not find template '%s'. Skipping all content!" % (template))
                 return
 
-            outfn = infn.replace(".md", ".html")
-            outfile = os.path.join(outdir, outfn)
-            with open(outfile, "w+") as fh:
+            with open(post.metadata["outpath"], "w+") as fh:
                 env.update({
                     'CONTENT': post.content,
                     'post': post.metadata,
@@ -172,7 +171,7 @@ class Site:
                 fh.write(html)
 
             if self.debug:
-                print("    %s -> %s" % (infn, outfile))
+                print("    %s -> %s" % (post.metadata["inpath"], post.metadata["outpath"]))
 
 
     def _render(self, template, env={}):
