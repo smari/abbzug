@@ -29,6 +29,7 @@ class Site:
         self.dir_templates = os.path.join(contentdir, td)
         self.dir_output = os.path.join(contentdir, od)
         self.dir_static = os.path.join(contentdir, sd)
+        self.base_url = self.config["ABBZUG"].get('base_url', '/')
 
         self.jinja2env = Environment(
             loader=FileSystemLoader(self.dir_templates),
@@ -142,7 +143,7 @@ class Site:
             post = frontmatter.load(infile)
             post.metadata["inpath"] = infile
             post.metadata["outpath"] = outfile
-            post.metadata["url"] = outfn
+            post.metadata["url"] = self.base_url + location + outfn
             self.cache[location].append(post)
 
 
