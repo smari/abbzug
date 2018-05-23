@@ -2,6 +2,7 @@ import os
 import glob
 import configparser
 
+from slugify import slugify
 from datetime import datetime
 from distutils.dir_util import copy_tree
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -60,6 +61,7 @@ class Site:
         stime = datetime.now()
 
         self.cache = {}
+        self.tags = {}
         for section in self.config.sections():
             if section[:1] == '/':
                 self._preload_section(section[1:], self.config[section])
@@ -69,6 +71,7 @@ class Site:
             if section[:1] == '/':
                 location = section[1:]
                 print("[LOCATION] /%s" % location)
+                self._build_tags(location, self.config[section])
                 self._build_section(location, self.config[section])
 
         self._copy_static()
@@ -86,15 +89,15 @@ class Site:
             raise ValueError("Unable to build section %s: No template specified." % (location))
 
         content = conf.get('content', None)
-        index = conf.get('index', None)
+        index_template = conf.get('index_template', None)
         template_file = os.path.join(self.dir_templates, template)
         if content:
             dir_content = os.path.join(self.dir_content, content)
             posts = self._build_content(location, content, template, conf)
-            if index:
+            if index_template:
                 # Build an index!
                 env = {'posts': self.cache[location]}
-                self._build_nocontent(location, index, conf, env)
+                self._build_nocontent(location, index_template, conf, env)
         else:
             if not content and self.debug:
                 print("  Warning: This section has no content!")
@@ -110,15 +113,15 @@ class Site:
 
         if self.debug:
             print("  Building template '%s' as '%s'" % (template, index))
-        try:
-            template = self.jinja2env.get_template(template)
-        except jinja2.exceptions.TemplateNotFound as e:
-            print("  ERROR: Could not find template '%s'. Skipping!" % (template))
-            return
+
+        template = self._get_template(template)
+        if not template: return
+
         with open(index, "w+") as fh:
             env.update({
                 'section': conf,
-                'config': self.config
+                'config': self.config,
+                'tags': self.tags[location]
             })
             fh.write(self._render(template, env))
 
@@ -136,6 +139,7 @@ class Site:
             print("  Searching for content in %s" % indir)
 
         self.cache[location] = []
+        self.tags[location] = {}
         for infile in glob.iglob(indir + '/**/*.md', recursive=True):
             infn = infile.split("/")[-1]
             outfn = infn.replace(".md", ".html")
@@ -144,29 +148,66 @@ class Site:
             post.metadata["inpath"] = infile
             post.metadata["outpath"] = outfile
             post.metadata["url"] = self.base_url + location + outfn
+            if "tags" not in post.metadata:
+                post.metadata["tags"] = {}
             self.cache[location].append(post)
+            for tag in post.metadata["tags"]:
+                if tag not in self.tags[location]:
+                    self.tags[location][tag] = {}
+                    self.tags[location][tag]["posts"] = []
+                self.tags[location][tag]["posts"].append(post)
+
+
+    def _build_tags(self, location, conf):
+        tag_template = conf.get('tag_template', None)
+        tag_subdir = conf.get('tag_subdir', None)
+        if location not in self.tags:
+            self.tags[location] = {}
+
+        tags = self.tags[location]
+
+        if not (tags and tag_template and tag_subdir):
+            return
+
+        outdir = os.path.join(self.dir_output, location, tag_subdir)
+
+        for tag, meta in tags.items():
+            meta["tag"] = tag
+            meta["slug"] = slugify(tag)
+            meta["url"] = self.base_url + os.path.join(location, tag_subdir, meta["slug"]) + '/'
+
+            tagoutdir = os.path.join(outdir, meta["slug"])
+            os.makedirs(tagoutdir, exist_ok=True)
+
+            meta["outfile"] = os.path.join(tagoutdir, 'index.html')
+            self.tags[location][tag] = meta
+            template = self._get_template(tag_template)
+            if not template: return
+            with open(meta["outfile"], "w+") as fh:
+                env = {
+                    'config': self.config,
+                    'section': conf,
+                    'tag': meta,
+                    'tagname': tag
+                }
+                html = self._render(template, env)
+                fh.write(html)
 
 
     def _build_content(self, location, content, template, conf, env={}):
         """Build a section that has associated Markdown posts."""
 
         for post in self.cache[location]:
-            jinja2env = Environment(
-                loader=FileSystemLoader(self.dir_templates),
-                extensions=['jinja2_markdown.MarkdownExtension', 'mdcontent.MDContentExtension']
-            )
-            try:
-                template = jinja2env.get_template(template)
-            except jinja2.exceptions.TemplateNotFound as e:
-                print("  ERROR: Could not find template '%s'. Skipping all content!" % (template))
-                return
+            template = self._get_template(template)
+            if not template: return
 
             with open(post.metadata["outpath"], "w+") as fh:
                 env.update({
                     'CONTENT': post.content,
                     'post': post.metadata,
                     'section': conf,
-                    'config': self.config
+                    'config': self.config,
+                    'tags': self.tags[location]
                 })
                 html = self._render(template, env)
                 fh.write(html)
@@ -174,6 +215,13 @@ class Site:
             if self.debug:
                 print("    %s -> %s" % (post.metadata["inpath"], post.metadata["outpath"]))
 
+
+    def _get_template(self, template):
+        try:
+            return self.jinja2env.get_template(template)
+        except jinja2.exceptions.TemplateNotFound as e:
+            print("  ERROR: Could not find template '%s'." % (template))
+            return None
 
     def _render(self, template, env={}):
         # TODO: Make render errors pretty.

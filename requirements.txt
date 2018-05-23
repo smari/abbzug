@@ -3,3 +3,4 @@ jinja2
 jinja2_markdown
 python-frontmatter
 pyinotify
+python-slugify
