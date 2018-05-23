@@ -123,6 +123,7 @@ class Site:
             env.update({
                 'section': conf,
                 'config': self.config,
+                'site': self.config['ABBZUG'],
                 'site_posts': self.cache,
                 'tags': self.tags[location]
             })
@@ -142,6 +143,7 @@ class Site:
                     'post': post.metadata,
                     'site_posts': self.cache,
                     'section': conf,
+                    'site': self.config['ABBZUG'],
                     'config': self.config,
                     'tags': self.tags[location]
                 })

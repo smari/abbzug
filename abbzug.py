@@ -50,6 +50,7 @@ def serve(site_dir):
     wm.add_watch(site_dir, pyinotify.IN_MODIFY, rec=True, auto_add=True, exclude_filter=excl)
     notifier.loop()
 
+
 CONF_TEMPLATE = """
 [ABBZUG]
 sitename = {sitename}
@@ -71,18 +72,18 @@ tag_subdir = tags/
 @click.argument("site_dir", type=click.Path(exists=False, dir_okay=True, file_okay=False))
 @click.option("--sitename", default="My Site")
 @click.option("--template_dir", default="templates/")
-@click.option("--output_dir", default="templates/")
+@click.option("--output_dir", default="output/")
 @click.option("--static_dir", default="static/")
-@click.option("--post_dir", default="posts/")
+@click.option("--post_dir", default="content/")
 def newsite(site_dir, **argv):
     os.makedirs(site_dir)
     with open(os.path.join(site_dir, "site.conf"), "w+") as conf:
-        conf.write(CONF_TEMPLATE % argv)
+        conf.write(CONF_TEMPLATE.format(**argv))
 
-    os.makedirs(os.path.join(site_dir, argv["template_dir"]))
-    os.makedirs(os.path.join(site_dir, argv["output_dir"]))
-    os.makedirs(os.path.join(site_dir, argv["static_dir"]))
-    os.makedirs(os.path.join(site_dir, argv["post_dir"]))
+    os.makedirs(os.path.join(site_dir, argv["template_dir"]), exist_ok=True)
+    os.makedirs(os.path.join(site_dir, argv["output_dir"]), exist_ok=True)
+    os.makedirs(os.path.join(site_dir, argv["static_dir"]), exist_ok=True)
+    os.makedirs(os.path.join(site_dir, argv["post_dir"]), exist_ok=True)
 
 
 if __name__ == "__main__":
