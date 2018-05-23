@@ -123,10 +123,33 @@ class Site:
             env.update({
                 'section': conf,
                 'config': self.config,
-                'posts': self.cache,
+                'site_posts': self.cache,
                 'tags': self.tags[location]
             })
             fh.write(self._render(template, env))
+
+
+    def _build_content(self, location, content, template, conf, env={}):
+        """Build a section that has associated Markdown posts."""
+
+        for post in self.cache[location]:
+            template = self._get_template(template)
+            if not template: return
+
+            with open(post.metadata["outpath"], "w+") as fh:
+                env.update({
+                    'CONTENT': post.content,
+                    'post': post.metadata,
+                    'site_posts': self.cache,
+                    'section': conf,
+                    'config': self.config,
+                    'tags': self.tags[location]
+                })
+                html = self._render(template, env)
+                fh.write(html)
+
+            if self.debug:
+                print("    %s -> %s" % (post.metadata["inpath"], post.metadata["outpath"]))
 
 
     def _preload_section(self, location, conf):
@@ -195,28 +218,6 @@ class Site:
                 }
                 html = self._render(template, env)
                 fh.write(html)
-
-
-    def _build_content(self, location, content, template, conf, env={}):
-        """Build a section that has associated Markdown posts."""
-
-        for post in self.cache[location]:
-            template = self._get_template(template)
-            if not template: return
-
-            with open(post.metadata["outpath"], "w+") as fh:
-                env.update({
-                    'CONTENT': post.content,
-                    'post': post.metadata,
-                    'section': conf,
-                    'config': self.config,
-                    'tags': self.tags[location]
-                })
-                html = self._render(template, env)
-                fh.write(html)
-
-            if self.debug:
-                print("    %s -> %s" % (post.metadata["inpath"], post.metadata["outpath"]))
 
 
     def _get_template(self, template):
