@@ -1,3 +1,5 @@
+import os
+
 import click
 import pyinotify
 
@@ -11,10 +13,10 @@ def cli(debug):
     ABBZUG_DEBUG = debug
 
 @cli.command()
-@click.argument("contentdir", type=click.Path(exists=True, dir_okay=True, file_okay=False))
-def build(contentdir):
+@click.argument("site_dir", type=click.Path(exists=True, dir_okay=True, file_okay=False))
+def build(site_dir):
     #try:
-    site = ssgsite.Site(contentdir)
+    site = ssgsite.Site(site_dir)
     site.build()
     #except Exception as e:
     #    if ABBZUG_DEBUG:
@@ -24,8 +26,8 @@ def build(contentdir):
     #        print("ERROR: %s" % e)
 
 @cli.command()
-@click.argument("contentdir", type=click.Path(exists=True, dir_okay=True, file_okay=False))
-def serve(contentdir):
+@click.argument("site_dir", type=click.Path(exists=True, dir_okay=True, file_okay=False))
+def serve(site_dir):
     class RebuildHandler(pyinotify.ProcessEvent):
         def my_init(self, site):
             self.site = site
@@ -34,10 +36,10 @@ def serve(contentdir):
             if self.site.dir_output in event.pathname:
                 return
             print("Detected change. Rebuilding:")
-            self.site = ssgsite.Site(contentdir)
+            self.site = ssgsite.Site(site_dir)
             self.site.build()
 
-    site = ssgsite.Site(contentdir)
+    site = ssgsite.Site(site_dir)
     site.build()
 
     wm = pyinotify.WatchManager()
@@ -45,8 +47,43 @@ def serve(contentdir):
     excl_lst = ["%s" % site.dir_output]
     excl = pyinotify.ExcludeFilter(excl_lst)
     notifier = pyinotify.Notifier(wm, default_proc_fun=handler)
-    wm.add_watch(contentdir, pyinotify.IN_MODIFY, rec=True, auto_add=True, exclude_filter=excl)
+    wm.add_watch(site_dir, pyinotify.IN_MODIFY, rec=True, auto_add=True, exclude_filter=excl)
     notifier.loop()
+
+CONF_TEMPLATE = """
+[ABBZUG]
+sitename = {sitename}
+template_dir = {template_dir}
+output_dir = {output_dir}
+static_dir = {static_dir}
+post_dir = {post_dir}
+; base_url = https://www.example.com
+
+[/]
+index_template = index.html
+post_template = post.html
+tag_template = tags.html
+; post_subdir = ...
+tag_subdir = tags/
+"""
+
+@cli.command()
+@click.argument("site_dir", type=click.Path(exists=False, dir_okay=True, file_okay=False))
+@click.option("--sitename", default="My Site")
+@click.option("--template_dir", default="templates/")
+@click.option("--output_dir", default="templates/")
+@click.option("--static_dir", default="static/")
+@click.option("--post_dir", default="posts/")
+def newsite(site_dir, **argv):
+    os.makedirs(site_dir)
+    with open(os.path.join(site_dir, "site.conf"), "w+") as conf:
+        conf.write(CONF_TEMPLATE % argv)
+
+    os.makedirs(os.path.join(site_dir, argv["template_dir"]))
+    os.makedirs(os.path.join(site_dir, argv["output_dir"]))
+    os.makedirs(os.path.join(site_dir, argv["static_dir"]))
+    os.makedirs(os.path.join(site_dir, argv["post_dir"]))
+
 
 if __name__ == "__main__":
     cli()

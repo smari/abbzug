@@ -22,11 +22,11 @@ class Site:
 
     def __init__(self, contentdir):
         self.load_config(contentdir)
-        td = self.config["ABBZUG"].get('templates', 'templates')
-        od = self.config["ABBZUG"].get('output', 'output')
-        cd = self.config["ABBZUG"].get('content', 'content')
-        sd = self.config["ABBZUG"].get('static', 'static')
-        self.dir_content = os.path.join(contentdir, cd)
+        td = self.config["ABBZUG"].get('template_dir', 'templates/')
+        od = self.config["ABBZUG"].get('output_dir', 'output/')
+        sd = self.config["ABBZUG"].get('static_dir', 'static/')
+        cd = self.config["ABBZUG"].get('post_dir', 'posts/')
+        self.dir_posts = os.path.join(contentdir, cd)
         self.dir_templates = os.path.join(contentdir, td)
         self.dir_output = os.path.join(contentdir, od)
         self.dir_static = os.path.join(contentdir, sd)
@@ -84,24 +84,26 @@ class Site:
     def _build_section(self, location, conf):
         """Build a section of a site based on its section configuration."""
 
-        template = conf.get('template', None)
-        if not template:
-            raise ValueError("Unable to build section %s: No template specified." % (location))
-
-        content = conf.get('content', None)
+        post_template = conf.get('post_template', None)
         index_template = conf.get('index_template', None)
-        template_file = os.path.join(self.dir_templates, template)
+        if not index_template:
+            raise ValueError("Unable to build section %s: No index template specified." % (location))
+
+        content = conf.get('post_subdir', None)
         if content:
-            dir_content = os.path.join(self.dir_content, content)
-            posts = self._build_content(location, content, template, conf)
-            if index_template:
-                # Build an index!
-                env = {'posts': self.cache[location]}
-                self._build_nocontent(location, index_template, conf, env)
+            if not post_template:
+                raise ValueError("Unable to build section %s: No post template specified." % (location))
+
+            dir_content = os.path.join(self.dir_posts, content)
+            posts = self._build_content(location, content, post_template, conf)
+
+            # Build an index!
+            env = {'posts': self.cache[location]}
+            self._build_nocontent(location, index_template, conf, env)
         else:
             if not content and self.debug:
                 print("  Warning: This section has no content!")
-            self._build_nocontent(location, template, conf)
+            self._build_nocontent(location, index_template, conf)
 
 
     def _build_nocontent(self, location, template, conf, env={}):
@@ -121,25 +123,26 @@ class Site:
             env.update({
                 'section': conf,
                 'config': self.config,
+                'posts': self.cache,
                 'tags': self.tags[location]
             })
             fh.write(self._render(template, env))
 
 
     def _preload_section(self, location, conf):
-        content = conf.get('content', None)
+        content = conf.get('post_subdir', None)
+        self.cache[location] = []
+        self.tags[location] = {}
         if not content:
             return
 
-        indir = os.path.join(self.dir_content, content)
+        indir = os.path.join(self.dir_posts, content)
         outdir = os.path.join(self.dir_output, location)
         os.makedirs(outdir, exist_ok=True)
 
         if self.debug:
             print("  Searching for content in %s" % indir)
 
-        self.cache[location] = []
-        self.tags[location] = {}
         for infile in glob.iglob(indir + '/**/*.md', recursive=True):
             infn = infile.split("/")[-1]
             outfn = infn.replace(".md", ".html")
