@@ -14,7 +14,23 @@ This is very young software. There are a number of very good features SSG's gene
 
 ## Installation
 
-For now, there is no package available.
+Regular installation:
+
+```shell
+$ git clone https://github.com/smari/abbzug.git
+$ cd abbzug
+$ python setup.py install
+```
+
+Then you can run it with:
+
+```shell
+$ abbzug
+```
+
+### Running from a directory
+
+Installing locally:
 
 ```shell
 $ git clone https://github.com/smari/abbzug.git
@@ -25,8 +41,10 @@ $ pip install -r requirements.txt
 Now you can run it with:
 
 ```shell
-$ python abbzug.py
+$ python abbzug/__init__.py
 ```
+
+
 
 ## Setting up a site
 
