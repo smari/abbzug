@@ -114,7 +114,7 @@ Of course, you may want to use more of Jinja2's advanced features to build a hie
 
 For the individual posts, you need to tell the template where to insert the compiled Markdown. So you might end up with something like this:
 
-````jinja2
+```jinja2
 {% extends "layout.html" %}
 {% block content %}
 
@@ -126,8 +126,6 @@ For the individual posts, you need to tell the template where to insert the comp
 
 {% endblock %}
 ```
-
-
 
 
 
