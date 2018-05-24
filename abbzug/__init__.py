@@ -3,7 +3,7 @@ import os
 import click
 import pyinotify
 
-import ssgsite
+from abbzug import ssgsite
 
 ABBZUG_DEBUG = False
 

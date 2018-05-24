@@ -1,10 +1,16 @@
 # Abbzug
 
-> "Lifting her lovely and longing face towards the inaudible chant of the sun, she drifted through her time, through space, through the concatenate cells of her unfolding self. Where to now, Abbzug?"
+> Lifting her lovely and longing face towards the inaudible chant of the sun, she drifted through her time, through space, through the concatenate cells of her unfolding self. Where to now, Abbzug?
+>
+> (from *The Monkey Wrench Gang* by Edward Abbey)
 
 
 
 Abbzug is a static site generator. It tries to make life very simple by not complicating things unnecessarily, while also being pretty radical when that [Glen Canyon Dam](https://wordpress.org/) is taunting you.
+
+I made Abbzug to scratch an itch. Most SSG's have rather annoying templating systems and or are surprisingly difficult to coax into doing certain things. While Jekyll and Hugo are both fine for their purposes, I wanted something a little bit more flexible and familiar.
+
+This is very young software. There are a number of very good features SSG's generally have, such as data directories, more nuanced static collection, and so on, that this doesn't yet have. But it does most of what I need it to already.
 
 ## Installation
 
@@ -125,7 +131,7 @@ For the individual posts, you need to tell the template where to insert the comp
 
 
 
-**Advanced note:** `CONTENT` is an Abbzug meta-variable containing the Markdown code itself, and `{% abbzug_markdown %}` is a template tag that will convert it to HTML in a nice way. You can technically pass any content to that template tag, or use the `CONTENT` variable in some other way if you want, but there's not really any super good reason to do so for most users.
+**Advanced note:** `CONTENT` is an internal variable containing the Markdown code itself, and `{% abbzug_markdown %}` is a template tag that will convert it to HTML in a nice way. You can technically pass any content to that template tag, or use the `CONTENT` variable in some other way if you want, but there's not really any super good reason to do so for most users.
 
 
 
@@ -170,4 +176,13 @@ Abbzug will keep track of your site directory and if any files change, it will a
 
 ## Copyright
 
-Abbzug is free software. 
+Abbzug ─ a Static Site Generator
+
+Copyright © 2018 Smári McCarthy
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
