@@ -34,7 +34,9 @@ class Site:
 
         self.jinja2env = Environment(
             loader=FileSystemLoader(self.dir_templates),
-            extensions=['jinja2_markdown.MarkdownExtension', 'abbzug.mdcontent.MDContentExtension']
+            extensions=['jinja2_markdown.MarkdownExtension',
+                        'abbzug.mdcontent.MDContentExtension',
+                        'jinja2.ext.loopcontrols']
         )
         self.debug = self.config.get('ABBZUG', 'debug', fallback=False)
 
