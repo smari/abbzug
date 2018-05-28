@@ -246,7 +246,7 @@ class Site:
     def _copy_static(self):
         """Copy static files."""
 
-        print("[STATIC] Copying...")
-        static_output = self.config["ABBZUG"].get("static_directory", "")
+        static_output = self.config["ABBZUG"].get("static_dir", "")
         static_output = os.path.join(self.dir_output, static_output)
+        print("[STATIC] Copying to %s." % static_output)
         copy_tree(self.dir_static, static_output)
