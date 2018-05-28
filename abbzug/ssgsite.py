@@ -124,10 +124,12 @@ class Site:
         with open(index, "w+") as fh:
             env.update({
                 'section': conf,
+                'section_name': location,
                 'config': self.config,
                 'site': self.config['ABBZUG'],
                 'site_posts': self.cache,
-                'tags': self.tags[location]
+                'tags': self.tags[location],
+                'site_tags': self.tags
             })
             fh.write(self._render(template, env))
 
@@ -178,6 +180,7 @@ class Site:
             post.metadata["inpath"] = infile
             post.metadata["outpath"] = outfile
             post.metadata["url"] = self.base_url + location + outfn
+            post.metadata["readingtime"] = round(len(str(post).split(" "))/270.0)
             if "tags" not in post.metadata:
                 post.metadata["tags"] = {}
             self.cache[location].append(post)
