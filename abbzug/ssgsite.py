@@ -67,13 +67,13 @@ class Site:
         for section in self.config.sections():
             if section[:1] == '/':
                 self._preload_section(section[1:], self.config[section])
+                self._build_tags(section[1:], self.config[section])
         print("[PRELOAD] Done")
 
         for section in self.config.sections():
             if section[:1] == '/':
                 location = section[1:]
                 print("[LOCATION] /%s" % location)
-                self._build_tags(location, self.config[section])
                 self._build_section(location, self.config[section])
 
         self._copy_static()
